@@ -4,13 +4,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>82ff3f6b-1722-4590-9385-9151966ce396</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>ProjectSpecification.py</StartupFile>
+    <StartupFile>Hierarchy2.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>ProjectSpecification</Name>
     <RootNamespace>ProjectSpecification</RootNamespace>
+    <InterpreterId>Global|PythonCore|3.11</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,7 +22,17 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ProjectSpecification.py" />
+    <Compile Include="GAF_PARSING.py" />
+    <Compile Include="Hierarchy.py" />
+    <Compile Include="Hierarchy2.py" />
+    <Compile Include="Hierarchy3.py" />
+    <Compile Include="OboParsing.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="goa_human.gaf" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|3.11" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
