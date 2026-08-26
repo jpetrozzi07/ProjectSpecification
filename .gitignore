@@ -216,3 +216,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+/.vs/ProjectSpecification/copilot-chat/6ca6c003/sessions
