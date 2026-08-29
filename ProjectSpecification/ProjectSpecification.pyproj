@@ -22,11 +22,13 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Gaf_parser.py" />
     <Compile Include="GAF_PARSING.py" />
     <Compile Include="Hierarchy.py" />
     <Compile Include="Hierarchy2.py" />
     <Compile Include="Hierarchy3.py" />
     <Compile Include="OboParsing.py" />
+    <Compile Include="obo_parser.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="goa_human.gaf" />
