@@ -63,7 +63,10 @@
 					<div class="input-group flex-nowrap">
 						<label for="searchString" class="form-label">Search For a string.</label>
 						<input type="email" class="form-control" id="searchString" placeholder="">
-						<button type="button" class="btn btn-primary" id="btnSearch">Search</button>
+						<button type="button" class="btn btn-primary" id="btnSearch">
+							<span id="btnSearchSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span id="btnSearchText">Search</span>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -88,6 +91,14 @@
 		}
 		// asegurar número entero y valor por defecto
 		const indexToSend = (selectedIndex !== null) ? parseInt(selectedIndex, 10) : 0;
+
+		// spinner + disable button
+		const btn = document.getElementById('btnSearch');
+		const spinner = document.getElementById('btnSearchSpinner');
+		const btnText = document.getElementById('btnSearchText');
+		btn.disabled = true;
+		spinner.classList.remove('d-none');
+		btnText.classList.add('visually-hidden');
 
 		// enviar al servidor
 		try {
@@ -116,6 +127,11 @@
 			}
 		} catch (err) {
 			console.error('Error sending search request:', err);
+		} finally {
+			// hide spinner + enable button
+			btn.disabled = false;
+			spinner.classList.add('d-none');
+			btnText.classList.remove('visually-hidden');
 		}
 	});
 
