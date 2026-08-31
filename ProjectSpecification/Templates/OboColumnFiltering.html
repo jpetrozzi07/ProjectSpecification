@@ -35,8 +35,8 @@
 	<!-- Header-->
 	<header class="py-5">
 		<div class="container px-lg-5">
-			<div class="p-4 p-lg-5 bg-light rounded-3 text-center">
-				<div class="m-4 m-lg-5">
+			<div class="p-1 p-lg-1 bg-light rounded-3 text-center">
+				<div class="m-2 m-lg-2">
 					<h1 class="display-5 fw-bold">Obo Column Filtering</h1>
 					<p class="fs-4">Bootstrap utility classes are used to create this jumbotron since the old component has been removed from the framework. Why create custom CSS when you can use utilities?</p>
 				</div>
@@ -120,73 +120,248 @@
 	});
 
 	// Renderer: injects a Bootstrap responsive table showing results into #results
-	window.displayResultsFromServer = function (data) {
-		const container = document.getElementById('results');
-		container.innerHTML = '';
-		console.info("funcion mostrar datos llamada");
-		if (!data) {
-			container.innerHTML = '<div class="alert alert-warning">No data received.</div>';
-			return;
-		}
+	// Implements client-side in-memory pagination with page size selector (10,20,50)
+	(function () {
+		// in-memory cache
+		window._resultsCache = {
+			rows: [],
+			columns: [],
+			pageSize: 10,
+			currentPage: 1
+		};
 
-		if (data.error) {
-			container.innerHTML = `<div class="alert alert-danger">Error: ${String(data.error)}</div>`;
-			return;
-		}
+		function createPageSizeControl() {
+			const wrapper = document.createElement('div');
+			wrapper.className = 'd-flex align-items-center mb-2 gap-2';
 
-		const rows = Array.isArray(data.results) ? data.results : [];
-		if (rows.length === 0) {
-			container.innerHTML = '<div class="alert alert-info">No results found.</div>';
-			return;
-		}
+			const label = document.createElement('label');
+			label.className = 'form-label mb-0';
+			label.textContent = 'Rows per page:';
+			label.setAttribute('for', 'pageSizeSelect');
 
-		// Derive columns from the first row's keys (stable order)
-		const columns = Object.keys(rows[0]);
-
-		// Build table
-		const responsiveDiv = document.createElement('div');
-		responsiveDiv.className = 'table-responsive';
-
-		const table = document.createElement('table');
-		table.className = 'table table-striped table-bordered';
-
-		// Header
-		const thead = document.createElement('thead');
-		const headRow = document.createElement('tr');
-		columns.forEach(col => {
-			const th = document.createElement('th');
-			th.scope = 'col';
-			th.textContent = col;
-			headRow.appendChild(th);
-		});
-		thead.appendChild(headRow);
-		table.appendChild(thead);
-
-		// Body
-		const tbody = document.createElement('tbody');
-		rows.forEach(item => {
-			const tr = document.createElement('tr');
-			columns.forEach(col => {
-				const td = document.createElement('td');
-				let v = item[col];
-				if (v === null || v === undefined) v = '';
-				else if (typeof v === 'object') v = JSON.stringify(v);
-				td.textContent = String(v);
-				tr.appendChild(td);
+			const select = document.createElement('select');
+			select.id = 'pageSizeSelect';
+			select.className = 'form-select form-select-sm w-auto';
+			[10, 20, 50].forEach(sz => {
+				const opt = document.createElement('option');
+				opt.value = String(sz);
+				opt.textContent = String(sz);
+				select.appendChild(opt);
 			});
-			tbody.appendChild(tr);
-		});
-		table.appendChild(tbody);
+			select.value = String(window._resultsCache.pageSize);
+			select.addEventListener('change', function () {
+				window._resultsCache.pageSize = parseInt(this.value, 10);
+				window._resultsCache.currentPage = 1;
+				renderTablePage(window._resultsCache.currentPage);
+			});
 
-		// Optional summary
-		const summary = document.createElement('div');
-		summary.className = 'mb-2';
-		summary.innerHTML = `<strong>Results:</strong> ${rows.length}`;
+			const info = document.createElement('div');
+			info.id = 'resultsCountInfo';
+			info.className = 'ms-3 text-muted';
 
-		responsiveDiv.appendChild(table);
-		container.appendChild(summary);
-		container.appendChild(responsiveDiv);
-	};
+			wrapper.appendChild(label);
+			wrapper.appendChild(select);
+			wrapper.appendChild(info);
+			return wrapper;
+		}
+
+		function createPaginationContainer() {
+			const nav = document.createElement('nav');
+			nav.ariaLabel = 'Results pagination';
+			nav.id = 'resultsPaginationNav';
+			nav.className = 'mt-2';
+			return nav;
+		}
+
+		function renderPaginationControls(container, totalPages, currentPage) {
+			container.innerHTML = '';
+			if (totalPages <= 1) return;
+
+			const ul = document.createElement('ul');
+			ul.className = 'pagination pagination-sm';
+
+			// Prev
+			const prevLi = document.createElement('li');
+			prevLi.className = 'page-item ' + (currentPage === 1 ? 'disabled' : '');
+			const prevA = document.createElement('a');
+			prevA.className = 'page-link';
+			prevA.href = '#';
+			prevA.textContent = 'Previous';
+			prevA.addEventListener('click', function (e) {
+				e.preventDefault();
+				if (currentPage > 1) {
+					window._resultsCache.currentPage = currentPage - 1;
+					renderTablePage(window._resultsCache.currentPage);
+				}
+			});
+			prevLi.appendChild(prevA);
+			ul.appendChild(prevLi);
+
+			// page numbers (showing a window if many)
+			const maxButtons = 7;
+			let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+			let end = start + maxButtons - 1;
+			if (end > totalPages) { end = totalPages; start = Math.max(1, end - maxButtons + 1); }
+
+			for (let p = start; p <= end; p++) {
+				const li = document.createElement('li');
+				li.className = 'page-item ' + (p === currentPage ? 'active' : '');
+				const a = document.createElement('a');
+				a.className = 'page-link';
+				a.href = '#';
+				a.textContent = String(p);
+				a.addEventListener('click', function (e) {
+					e.preventDefault();
+					window._resultsCache.currentPage = p;
+					renderTablePage(p);
+				});
+				li.appendChild(a);
+				ul.appendChild(li);
+			}
+
+			// Next
+			const nextLi = document.createElement('li');
+			nextLi.className = 'page-item ' + (currentPage === totalPages ? 'disabled' : '');
+			const nextA = document.createElement('a');
+			nextA.className = 'page-link';
+			nextA.href = '#';
+			nextA.textContent = 'Next';
+			nextA.addEventListener('click', function (e) {
+				e.preventDefault();
+				if (currentPage < totalPages) {
+					window._resultsCache.currentPage = currentPage + 1;
+					renderTablePage(window._resultsCache.currentPage);
+				}
+			});
+			nextLi.appendChild(nextA);
+			ul.appendChild(nextLi);
+
+			container.appendChild(ul);
+		}
+
+		function renderTablePage(pageIndex) {
+			const container = document.getElementById('results');
+			container.innerHTML = '';
+
+			const rows = window._resultsCache.rows || [];
+			const columns = window._resultsCache.columns || [];
+			const pageSize = window._resultsCache.pageSize || 10;
+			const totalRows = rows.length;
+			const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+			const safePage = Math.min(Math.max(1, pageIndex), totalPages);
+			window._resultsCache.currentPage = safePage;
+
+			// Controls: page size selector + count info
+			const controlsDiv = document.createElement('div');
+			controlsDiv.className = 'd-flex justify-content-between align-items-center flex-wrap mb-2';
+
+			const leftControls = createPageSizeControl();
+			controlsDiv.appendChild(leftControls);
+
+			const rightControls = document.createElement('div');
+			rightControls.className = 'text-end text-muted';
+			rightControls.innerHTML = `<small>Page ${safePage} of ${totalPages}</small>`;
+			controlsDiv.appendChild(rightControls);
+
+			container.appendChild(controlsDiv);
+
+			// summary/info
+			const startIndex = (safePage - 1) * pageSize;
+			const endIndex = Math.min(startIndex + pageSize, totalRows);
+
+			const summary = document.createElement('div');
+			summary.className = 'mb-2';
+			summary.innerHTML = `<strong>Results:</strong> ${totalRows} &nbsp; <small class="text-muted">showing ${startIndex + 1} - ${endIndex}</small>`;
+			container.querySelector('#resultsCountInfo')?.remove(); // safety
+			container.appendChild(summary);
+
+			if (totalRows === 0) {
+				const info = document.createElement('div');
+				info.className = 'alert alert-info';
+				info.textContent = 'No results found.';
+				container.appendChild(info);
+				return;
+			}
+
+			// Build table
+			const responsiveDiv = document.createElement('div');
+			responsiveDiv.className = 'table-responsive';
+
+			const table = document.createElement('table');
+			table.className = 'table table-striped table-bordered table-sm';
+
+			// Header
+			const thead = document.createElement('thead');
+			const headRow = document.createElement('tr');
+			columns.forEach(col => {
+				const th = document.createElement('th');
+				th.scope = 'col';
+				th.textContent = col;
+				headRow.appendChild(th);
+			});
+			thead.appendChild(headRow);
+			table.appendChild(thead);
+
+			// Body (page slice)
+			const tbody = document.createElement('tbody');
+			const pageRows = rows.slice(startIndex, endIndex);
+			pageRows.forEach(item => {
+				const tr = document.createElement('tr');
+				columns.forEach(col => {
+					const td = document.createElement('td');
+					let v = item[col];
+					if (v === null || v === undefined) v = '';
+					else if (typeof v === 'object') v = JSON.stringify(v);
+					td.textContent = String(v);
+					tr.appendChild(td);
+				});
+				tbody.appendChild(tr);
+			});
+			table.appendChild(tbody);
+
+			responsiveDiv.appendChild(table);
+			container.appendChild(responsiveDiv);
+
+			// Pagination controls
+			const paginationNav = createPaginationContainer();
+			container.appendChild(paginationNav);
+			renderPaginationControls(paginationNav, totalPages, safePage);
+		}
+
+		// Public function called from search response handler
+		window.displayResultsFromServer = function (data) {
+			const container = document.getElementById('results');
+			container.innerHTML = '';
+			console.info("funcion mostrar datos llamada");
+			if (!data) {
+				container.innerHTML = '<div class="alert alert-warning">No data received.</div>';
+				return;
+			}
+
+			if (data.error) {
+				container.innerHTML = `<div class="alert alert-danger">Error: ${String(data.error)}</div>`;
+				return;
+			}
+
+			const rows = Array.isArray(data.results) ? data.results : [];
+			if (rows.length === 0) {
+				container.innerHTML = '<div class="alert alert-info">No results found.</div>';
+				return;
+			}
+
+			// Derive columns from the first row's keys (stable order)
+			const columns = Object.keys(rows[0]);
+
+			// Save to in-memory cache and render first page
+			window._resultsCache.rows = rows;
+			window._resultsCache.columns = columns;
+			window._resultsCache.currentPage = 1;
+			// keep existing pageSize (or default)
+			if (!window._resultsCache.pageSize) window._resultsCache.pageSize = 10;
+
+			renderTablePage(1);
+		};
+	})();
 </script>
 
 </body>
