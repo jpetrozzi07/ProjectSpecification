@@ -411,9 +411,9 @@ class OboParser:
             print('')
     
         if not results.empty:
-            show_details = input('Enter a GO ID to view full details (or press Enter to skip): ').strip()
-            if show_details:
-                self._display_term_details(show_details)
+            # show_details = input('Enter a GO ID to view full details (or press Enter to skip): ').strip()
+            # if show_details:
+                self._display_term_details(query)
  
     def _display_term_details(self, term_id):
         
@@ -444,9 +444,9 @@ class OboParser:
             print('')
             print(children[['id', 'name']].to_string(index=False))
         
-        explore = input('Enter a GO ID to explore (or press Enter to return): ').strip() #option to keep searching after a filtration is done
-        if explore:
-            self._display_term_details(explore)
+        # explore = input('Enter a GO ID to explore (or press Enter to return): ').strip() #option to keep searching after a filtration is done
+        # if explore:
+        # self._display_term_details(term_id)
     
     def _display_statistics(self):
     

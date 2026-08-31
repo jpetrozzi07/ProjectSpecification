@@ -27,6 +27,7 @@
     <Compile Include="GAF_PARSING.py" />
     <Compile Include="go_analyzer_obo_plus_gaf_finished.py" />
     <Compile Include="OboParsing.py" />
+    <Compile Include="obo_endpoints.py" />
     <Compile Include="obo_parser.py" />
     <Compile Include="app.py" />
   </ItemGroup>

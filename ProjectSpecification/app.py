@@ -4,9 +4,11 @@ from go_analyzer_obo_plus_gaf_finished import GO_Tools
 import threading
 from Gaf_parser_finished import GafParser
 from gaf_endpoints import gaf_bp
+from obo_endpoints import obo_bp
 
 app = Flask(__name__) #nombre de la pagina
 app.register_blueprint(gaf_bp)
+app.register_blueprint(obo_bp)
 
 # Globals to hold tools and status
 _tools = None
@@ -83,7 +85,11 @@ def gaf_column_filtering():
 
 @app.route('/OboColumnFiltering')
 def obo_column_filtering():
-    return render_template('OboColumnFiltering.html')
+    with _tools_lock:
+        if not _tools or not _tools_status["ready"]:
+            return render_template('OboColumnFiltering.html', searchers={})
+        searchers = getattr(_tools, "obo").searchers
+    return render_template('OboColumnFiltering.html', searchers=searchers)
 
 @app.route('/SimilarityCalculationsViewer')
 def similarity_viewer():

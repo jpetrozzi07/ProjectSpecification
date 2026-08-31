@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
@@ -19,7 +19,7 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-		<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 		<div class="container px-lg-5">
 			<a class="navbar-brand" href="#!">Go Analyzer</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
@@ -45,11 +45,149 @@
 	</header>
 	<section class="pt-4">
 		<div class="container px-lg-5">
+			<!-- Page Features-->
+			<div class="row gx-lg-5">
+				<div class="col-lg-6 col-xxl-4 mb-5">
+					{%- for s in searchers %}
+					<div class="form-check">
+					  <input class="form-check-input" type="radio" name="searchRadios" id="searchRadios{{ loop.index0 }}" value="{{ loop.index0 }}" {% if loop.first %}checked{% endif %}>
+					  <label class="form-check-label" for="searchRadios{{ loop.index0 }}">
+						{{ s.split("'")[1] if "'" in s else s }}
+					  </label>
+					</div>
+					{%- endfor %}
+				</div>
+			</div>
+			<div class="row gx-lg-5">
+				<div class="col-lg-6 col-xxl-4 mb-5">
+					<div class="input-group flex-nowrap">
+						<label for="searchString" class="form-label">Search For a string.</label>
+						<input type="email" class="form-control" id="searchString" placeholder="">
+						<button type="button" class="btn btn-primary" id="btnSearch">Search</button>
+					</div>
+				</div>
+			</div>
+			<div class="mt-4" id="results">
+			</div>
 		</div>
 	</section>
 <footer class="py-5 bg-dark">
 	<div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>
 </footer>
+
+	<script>
+		document.getElementById('btnSearch').addEventListener('click', async function () {
+		// obtener texto de búsqueda
+		const query = document.getElementById('searchString').value || '';
+
+		// obtener radio seleccionado (valor = índice)
+		const radios = document.getElementsByName('searchRadios');
+		let selectedIndex = null;
+		for (const r of radios) {
+			if (r.checked) { selectedIndex = r.value; break; }
+		}
+		// asegurar número entero y valor por defecto
+		const indexToSend = (selectedIndex !== null) ? parseInt(selectedIndex, 10) : 0;
+
+		// enviar al servidor
+		try {
+			const resp = await fetch('{{ url_for("obo.obo_column_filtering_search") }}', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ searcherIndex: indexToSend, query: query })
+			});
+
+			console.info("Respuesta", resp);
+			if (!resp.ok) {
+				const text = await resp.text();
+				console.error('Search request failed:', resp.status, text);
+				return;
+			}
+
+			const results = await resp.json();
+			console.log('Search results:', results);
+
+			// Llama una función client-side para mostrar resultados si existe
+			if (typeof window.displayResultsFromServer === 'function') {
+				window.displayResultsFromServer(results);
+			} else {
+				// fallback mínimo: mostrar en consola
+				console.info('No client-side renderer found. Implement window.displayResultsFromServer(results) to render results.');
+			}
+		} catch (err) {
+			console.error('Error sending search request:', err);
+		}
+	});
+
+	// Renderer: injects a Bootstrap responsive table showing results into #results
+	window.displayResultsFromServer = function (data) {
+		const container = document.getElementById('results');
+		container.innerHTML = '';
+		console.info("funcion mostrar datos llamada");
+		if (!data) {
+			container.innerHTML = '<div class="alert alert-warning">No data received.</div>';
+			return;
+		}
+
+		if (data.error) {
+			container.innerHTML = `<div class="alert alert-danger">Error: ${String(data.error)}</div>`;
+			return;
+		}
+
+		const rows = Array.isArray(data.results) ? data.results : [];
+		if (rows.length === 0) {
+			container.innerHTML = '<div class="alert alert-info">No results found.</div>';
+			return;
+		}
+
+		// Derive columns from the first row's keys (stable order)
+		const columns = Object.keys(rows[0]);
+
+		// Build table
+		const responsiveDiv = document.createElement('div');
+		responsiveDiv.className = 'table-responsive';
+
+		const table = document.createElement('table');
+		table.className = 'table table-striped table-bordered';
+
+		// Header
+		const thead = document.createElement('thead');
+		const headRow = document.createElement('tr');
+		columns.forEach(col => {
+			const th = document.createElement('th');
+			th.scope = 'col';
+			th.textContent = col;
+			headRow.appendChild(th);
+		});
+		thead.appendChild(headRow);
+		table.appendChild(thead);
+
+		// Body
+		const tbody = document.createElement('tbody');
+		rows.forEach(item => {
+			const tr = document.createElement('tr');
+			columns.forEach(col => {
+				const td = document.createElement('td');
+				let v = item[col];
+				if (v === null || v === undefined) v = '';
+				else if (typeof v === 'object') v = JSON.stringify(v);
+				td.textContent = String(v);
+				tr.appendChild(td);
+			});
+			tbody.appendChild(tr);
+		});
+		table.appendChild(tbody);
+
+		// Optional summary
+		const summary = document.createElement('div');
+		summary.className = 'mb-2';
+		summary.innerHTML = `<strong>Results:</strong> ${rows.length}`;
+
+		responsiveDiv.appendChild(table);
+		container.appendChild(summary);
+		container.appendChild(responsiveDiv);
+	};
+</script>
 
 </body>
 </html>
