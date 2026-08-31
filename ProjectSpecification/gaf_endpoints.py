@@ -1,5 +1,7 @@
 ﻿from flask import Blueprint, request, jsonify, current_app
 import traceback
+import math
+import numpy as np
 
 # Lazy-loaded parser singleton
 _parser = None
@@ -18,6 +20,33 @@ def _get_parser():
             # deja la excepción para manejarla en la ruta
             raise
     return _parser
+
+def _sanitize_value(v):
+    # Convierte numpy scalars a tipos nativos
+    if isinstance(v, np.generic):
+        try:
+            v = v.item()
+        except Exception:
+            # fallback a string si no se puede convertir
+            return str(v)
+    # Reemplaza NaN e Inf por None (que se serializa a null en JSON)
+    if isinstance(v, float):
+        if math.isnan(v) or math.isinf(v):
+            return None
+        return v
+    # Deja pasar dicts/lists para procesarlos recursivamente
+    if isinstance(v, dict):
+        return {k: _sanitize_value(val) for k, val in v.items()}
+    if isinstance(v, list):
+        return [_sanitize_value(i) for i in v]
+    return v
+
+def _sanitize_record(rec):
+    if isinstance(rec, dict):
+        return {k: _sanitize_value(v) for k, v in rec.items()}
+    if isinstance(rec, list):
+        return [_sanitize_value(i) for i in rec]
+    return _sanitize_value(rec)
 
 @gaf_bp.route('/gaf/search', methods=['POST'], endpoint='gaf_column_filtering_search')
 def gaf_column_filtering_search():
@@ -65,7 +94,14 @@ def gaf_column_filtering_search():
             current_app.logger.exception("Error converting results DataFrame to dict")
             records = []
 
-        return jsonify({'count': len(records), 'results': records})
+        # Sanitize: reemplaza NaN/Inf y convierte numpy scalars para producir JSON válido
+        try:
+            sanitized = [_sanitize_record(r) for r in records]
+        except Exception:
+            current_app.logger.exception("Error sanitizing records before jsonify")
+            sanitized = records  # enviar lo que haya como último recurso
+
+        return jsonify({'count': len(sanitized), 'results': sanitized})
     except Exception as e:
         current_app.logger.error("Unhandled error in gaf_column_filtering_search: %s", e)
         return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
