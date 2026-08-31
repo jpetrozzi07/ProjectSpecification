@@ -81,6 +81,27 @@ def gaf_column_filtering():
         searchers = getattr(_tools, "gaf").searchers
     return render_template('GafColumnFiltering.html', searchers=searchers)
 
+@app.route('/OboColumnFiltering')
+def obo_column_filtering():
+    return render_template('OboColumnFiltering.html')
+
+@app.route('/SimilarityCalculationsViewer')
+def similarity_viewer():
+    return render_template('SimilarityCalculationsViewer.html')
+
+@app.route('/NeighborhoodViewer')
+def neighborhood_viewer():
+    return render_template('NeighborhoodViewer.html')
+
+@app.route('/ViewingAnnotationMatrix')
+def annotation_matrix_viewer():
+    return render_template('ViewingAnnotationMatrix.html')
+
+@app.route('/SoftwareInstructions')
+def instructions_viewer():
+    return render_template('SoftwareInstructions.html')
+
+
 # @app.route ('/SegundaPagina') #volver al home
 # def SegundaPagina():
 #     return render_template('SegundaPagina.html')

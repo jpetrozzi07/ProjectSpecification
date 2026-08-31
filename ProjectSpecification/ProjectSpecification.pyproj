@@ -82,6 +82,11 @@
     <Content Include="static\js\bootstrap.min.js.map" />
     <Content Include="templates\GafColumnFiltering.html" />
     <Content Include="templates\home.html" />
+    <Content Include="templates\OboColumnFiltering.html" />
+    <Content Include="templates\SimilarityCalculationsViewer.html" />
+    <Content Include="templates\NeighborhoodViewer.html" />
+    <Content Include="templates\SoftwareInstructions.html" />
+    <Content Include="templates\ViewingAnnotationMatrix.html" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|PythonCore|3.11" />

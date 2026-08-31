@@ -172,7 +172,7 @@ class GO_Tools:
     
     
         while True:
-            selection = input('Select one option from 1 to 7 (input an integer): ')
+            selection = input('Select one option from 1 to 6 (input an integer): ')
         
             if selection == '1':  #re-use of gaf menu
                 self.search_gaf()
@@ -232,7 +232,7 @@ class GO_Tools:
                 break
         
             else:
-                print('Invalid option, please insert a number from 1 to 8')
+                print('Invalid option, please insert a number from 1 to 6')
             
             
             
