@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>GO Analyzer</title>
+    <!-- Favicon-->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <!--<link href="~/css/styles.css" rel="stylesheet" />-->
+
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Minimal styling */
+        #status {
+            margin: 1rem;
+            font-family: Arial, sans-serif;
+        }
+
+        #message {
+            margin-top: .5rem;
+            color: #1a73e8;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Welcome</h1>
+        <div id="status">
+            <div id="loading">Initializing tools... <span id="spinner">⏳</span></div>
+            <div id="message" style="display:none;"></div>
+        </div>
+        <!-- Page content can be shown immediately here -->
+        <p>The page is ready. Tools will be loaded in the background.</p>
+    </main>
+
+    <script>
+        // Start loading tools and poll status until ready, then show loadGafMessage
+        async function startAndPollTools() {
+            try {
+                // Start background load (silent if already started)
+                await fetch('/start-tools', { method: 'POST' });
+
+                // Poll status
+                const pollInterval = 500; // ms
+                const statusEl = document.getElementById('loading');
+                const messageEl = document.getElementById('message');
+
+                const poll = async () => {
+                    const resp = await fetch('/tools-status');
+                    if (!resp.ok) {
+                        statusEl.textContent = 'Failed to get tools status';
+                        return;
+                    }
+                    const data = await resp.json();
+                    if (data.loading) {
+                        statusEl.textContent = 'Loading tools... ⏳';
+                        setTimeout(poll, pollInterval);
+                        return;
+                    }
+                    if (data.ready) {
+                        statusEl.style.display = 'none';
+                        messageEl.style.display = 'block';
+                        messageEl.textContent = data.message || 'Tools loaded.';
+                        return;
+                    }
+                    // Not loading and not ready => show message (error or not started)
+                    statusEl.textContent = 'Tools not loaded.';
+                    messageEl.style.display = 'block';
+                    messageEl.textContent = data.message || '';
+                };
+
+                poll();
+            } catch (err) {
+                document.getElementById('loading').textContent = 'Error starting tools: ' + err;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', startAndPollTools);
+    </script>
+    <!-- Responsive navbar-->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container px-lg-5">
+            <a class="navbar-brand" href="#!">Go Analyzer</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="#!">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#!">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#!">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Header-->
+    <header class="py-5">
+        <div class="container px-lg-5">
+            <div class="p-4 p-lg-5 bg-light rounded-3 text-center">
+                <div class="m-4 m-lg-5">
+                    <h1 class="display-5 fw-bold">A warm welcome!</h1>
+                    <p class="fs-4">Bootstrap utility classes are used to create this jumbotron since the old component has been removed from the framework. Why create custom CSS when you can use utilities?</p>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Page Content-->
+    <section class="pt-4">
+        <div class="container px-lg-5">
+            <!-- Page Features-->
+            <div class="row gx-lg-5">
+                <div class="col-lg-6 col-xxl-4 mb-5">
+                    {{loadGafFile}}
+                </div>
+            </div>
+            <div class="row gx-lg-5">
+                <div class="col-lg-6 col-xxl-4 mb-5">
+                    <div class="card bg-light border-0 h-100">
+                        <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
+                            <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4">
+                                <a href="{{ url_for('gaf_column_filtering') }}" class="text-white" title="Gaf Column Filtering" aria-label="Gaf Column Filtering">
+                                    <i class="bi bi-funnel"></i>
+                                </a>
+                            </div>
+                            <h2 class="fs-4 fw-bold">Column filtering from GAF file</h2>
+                            <p class="mb-0">With Bootstrap 5, we've created a fresh new layout for this template!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-xxl-4 mb-5">
+                    <div class="card bg-light border-0 h-100">
+                        <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
+                            <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4"><i class="bi bi-bar-chart-steps"></i></div>
+                            <h2 class="fs-4 fw-bold">Ontology Menu from OBO file.</h2>
+                            <p class="mb-0">As always, Start Bootstrap has a powerful collectin of free templates.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-xxl-4 mb-5">
+                    <div class="card bg-light border-0 h-100">
+                        <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
+                            <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4"><i class="bi bi-bezier2"></i></div>
+                            <h2 class="fs-4 fw-bold">Viewing Similarity between terms.</h2>
+                            <p class="mb-0">The heroic part of this template is the jumbotron hero header!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-xxl-4 mb-5">
+                    <div class="card bg-light border-0 h-100">
+                        <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
+                            <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4"><i class="bi bi-calendar-check"></i></div>
+                            <h2 class="fs-4 fw-bold">Checking Term neighborhood in OBO file.</h2>
+                            <p class="mb-0">We've created some custom feature boxes using Bootstrap icons!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-xxl-4 mb-5">
+                    <div class="card bg-light border-0 h-100">
+                        <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
+                            <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4"><i class="bi bi-binoculars-fill"></i></div>
+                            <h2 class="fs-4 fw-bold">View Annotation Matrices.</h2>
+                            <p class="mb-0">We keep our dependencies up to date and squash bugs as they come!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-xxl-4 mb-5">
+                    <div class="card bg-light border-0 h-100">
+                        <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
+                            <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4"><i class="bi bi-card-checklist"></i></div>
+                            <h2 class="fs-4 fw-bold">Software Instructions</h2>
+                            <p class="mb-0">Start Bootstrap has been the leader in free Bootstrap templates since 2013!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Footer-->
+    <footer class="py-5 bg-dark">
+        <div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>
+    </footer>
+
+</body>
+</html>
