@@ -90,18 +90,24 @@ class partial_name_searcher(base_searcher):
     def get_description(self):
         return "Search by partial name (e.g., 'apoptosis')"
 
-class parse_obo:
+class OboParser:
 
     def __init__(self, filepath):
+
         self.filepath = filepath
         self.terms = {} #information is displayed in rows, not columns, so we search in between the terms and displayh them as columns
-        self.df = self._load_obo()
+        self.df, self.load_messages = self._load_obo()
         self.searchers = {'GO_ID': id_searcher(self.df),'Gene Symbol': name_searcher(self.df),'Obsolete Terms': obsolete_searcher(self.df),'Namespace': namespace_searcher(self.df), 'Partial Name': partial_name_searcher(self.df)}
         
         
     def _load_obo(self): #protected from external code
         
-        print(f"Loading OBO file: {self.filepath}")     #pandas method avoided because obo file functions in rows, not columns unlike gaf file, leading to differfent reading
+        messages = []
+        def _log(msg):
+            messages.append(str(msg))
+            print(msg)
+
+        _log(f"Loading OBO file: {self.filepath}")     #pandas method avoided because obo file functions in rows, not columns unlike gaf file, leading to differfent reading
        
         terms_data = []
         current_term = {}
@@ -193,22 +199,33 @@ class parse_obo:
                 if col not in df.columns:
                     df[col] = ''
             
-            print(f"Loaded {len(df)} GO terms")
+            _log(f"Loaded {len(df)} GO terms")
             
             if 'namespace' in df.columns:
                 namespaces = df['namespace'].value_counts()
-                print("Namespace distribution:")
+                _log("Namespace distribution:")
                 for ns, count in namespaces.items():
-                    print(f"      {ns}: {count:,}")
+                    _log(f"      {ns}: {count:,}")
             
-            return df
+            string = "\n".join(messages)
+            return df, string
             
         except FileNotFoundError:
-            print(f"❌ File not found: {self.filepath}")
-            return pd.DataFrame()
+            _log(f"❌ File not found: {self.filepath}")
+            string = "\n".join(messages)
+            return pd.DataFrame(), string
         except Exception as e:
-            print(f"❌ Error loading OBO file: {e}")
-            return pd.DataFrame()
+            _log(f"❌ Error loading OBO file: {e}")
+            string = "\n".join(messages)
+            return pd.DataFrame(), string
+    
+            
+        # except FileNotFoundError:
+        #     print(f"❌ File not found: {self.filepath}")
+        #     return pd.DataFrame()
+        # except Exception as e:
+        #     print(f"❌ Error loading OBO file: {e}")
+        #     return pd.DataFrame()
     
     
     def get_term(self, term_id):
@@ -454,6 +471,6 @@ class parse_obo:
 
 if __name__ == "__main__":
     
-    parser = parse_obo('go-basic.obo')
+    parser = OboParser('go-basic.obo')
 
     parser.search_menu()

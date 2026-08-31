@@ -108,7 +108,7 @@ class aspect_searcher(base_searcher):
     
     #polymorphism shown as the search() method works in all searchers
         
-class GAFparser:   #class for gaf parser
+class GafParser:   #class for gaf parser
 
     def __init__(self, filepath):  #constructor of the gaf parser class
         
@@ -270,7 +270,7 @@ class GAFparser:   #class for gaf parser
 
 if __name__ == "__main__":
         
-    parser = GAFparser('goa_human.gaf')
+    parser = GafParser('goa_human.gaf')
     print(parser.load_messages)
     parser.search_menu()
             

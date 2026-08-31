@@ -31,18 +31,8 @@
     </style>
 </head>
 <body>
-    <main>
-        <h1>Welcome</h1>
-        <div id="status">
-            <div id="loading">Initializing tools... <span id="spinner">⏳</span></div>
-            <div id="message" style="display:none;"></div>
-        </div>
-        <!-- Page content can be shown immediately here -->
-        <p>The page is ready. Tools will be loaded in the background.</p>
-    </main>
-
     <script>
-        // Start loading tools and poll status until ready, then show loadGafMessage
+        // Start loading tools and poll status until ready, then show loadGafMessage / loadOboMessage
         async function startAndPollTools() {
             try {
                 // Start background load (silent if already started)
@@ -51,7 +41,11 @@
                 // Poll status
                 const pollInterval = 500; // ms
                 const statusEl = document.getElementById('loading');
-                const messageEl = document.getElementById('message');
+                const messageGaf = document.getElementById('messageGaf');
+                const messageObo = document.getElementById('messageObo');
+                //const messageOboFull = document.getElementById('messageOboFull');
+                const toggleOboBtn = document.getElementById('toggleObo');
+                const menu = document.getElementById('menu');
 
                 const poll = async () => {
                     const resp = await fetch('/tools-status');
@@ -61,20 +55,40 @@
                     }
                     const data = await resp.json();
                     if (data.loading) {
+                        menu.style.display = 'none';
                         statusEl.textContent = 'Loading tools... ⏳';
                         setTimeout(poll, pollInterval);
                         return;
                     }
                     if (data.ready) {
                         statusEl.style.display = 'none';
-                        messageEl.style.display = 'block';
-                        messageEl.textContent = data.message || 'Tools loaded.';
+                        // GAF message (short)
+                        messageGaf.style.display = 'block';
+                        messageGaf.textContent = data.messageGaf || 'GAF tools loaded.';
+                        // OBO: show short summary, keep full message hidden until user expands
+                        messageObo.style.display = 'block';
+                        messageObo.textContent = data.messageObo || 'OBO tools loaded.';
+                        //const fullObo = data.messageObo || '';
+                        // Use first non-empty line as a short summary if available
+                        //const firstLine = fullObo.split('\n').find(l => l.trim().length > 0) || '';
+                        //messageObo.textContent = firstLine || 'OBO tools loaded.';
+                        //if (fullObo.trim().length > 0) {
+                        //    messageOboFull.textContent = fullObo;
+                        //    toggleOboBtn.style.display = 'inline-block';
+                        //    toggleOboBtn.textContent = 'Show details';
+                        //} else {
+                        //    messageOboFull.textContent = '';
+                        //    toggleOboBtn.style.display = 'none';
+                        //}
+                        menu.style.display = 'block';
                         return;
                     }
                     // Not loading and not ready => show message (error or not started)
                     statusEl.textContent = 'Tools not loaded.';
-                    messageEl.style.display = 'block';
-                    messageEl.textContent = data.message || '';
+                    messageGaf.style.display = 'block';
+                    messageGaf.textContent = data.message || '';
+                    messageObo.style.display = 'block';
+                    messageObo.textContent = data.message || '';
                 };
 
                 poll();
@@ -84,6 +98,19 @@
         }
 
         document.addEventListener('DOMContentLoaded', startAndPollTools);
+
+        // toggle handler for OBO full message
+        function toggleOboDetails() {
+            const full = document.getElementById('messageOboFull');
+            const btn = document.getElementById('toggleObo');
+            if (full.style.display === 'none' || full.style.display === '') {
+                full.style.display = 'block';
+                btn.textContent = 'Hide details';
+            } else {
+                full.style.display = 'none';
+                btn.textContent = 'Show details';
+            }
+        }
     </script>
     <!-- Responsive navbar-->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -112,13 +139,19 @@
     </header>
     <!-- Page Content-->
     <section class="pt-4">
+        <!-- Page Features-->
         <div class="container px-lg-5">
-            <!-- Page Features-->
-            <div class="row gx-lg-5">
-                <div class="col-lg-6 col-xxl-4 mb-5">
-                    {{loadGafFile}}
+            <div class="p-1 p-lg-1 mb-5 bg-light rounded-3 text-center">
+                <div class="m-1 m-lg-1">
+                    <div id="status">
+                        <div id="loading">Initializing tools... <span id="spinner">⏳</span></div>
+                        <div id="messageGaf" style="display:none;"></div>
+                        <div id="messageObo" style="display:none;"></div>
+                    </div>
                 </div>
             </div>
+        </div>
+        <div class="container px-lg-5" id="menu">
             <div class="row gx-lg-5">
                 <div class="col-lg-6 col-xxl-4 mb-5">
                     <div class="card bg-light border-0 h-100">

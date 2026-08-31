@@ -2,6 +2,7 @@ from flask import Flask, render_template, redirect, session, request, jsonify
 from datetime import datetime
 from go_analyzer_obo_plus_gaf_finished import GO_Tools
 import threading
+from Gaf_parser_finished import GafParser
 
 app = Flask(__name__) #nombre de la pagina
 
@@ -10,7 +11,8 @@ _tools = None
 _tools_status = {
     "loading": False,
     "ready": False,
-    "message": ""
+    "messageGaf": "",
+    "messageObo": ""
 }
 _tools_lock = threading.Lock()
 
@@ -19,18 +21,22 @@ def _load_tools_bg(gaf_path: str, obo_path: str):
     with _tools_lock:
         _tools_status["loading"] = True
         _tools_status["ready"] = False
-        _tools_status["message"] = ""
+        _tools_status["messageGaf"] = ""
+        _tools_status["messageObo"] = ""
     try:
         # Heavy initialization happens here
         tools = GO_Tools(gaf_path, obo_path)
-        message = getattr(tools, "loadGafMessage", "")
+        messageGaf = getattr(tools, "loadGafMessage", "")
+        messageObo = getattr(tools, "loadOboMessage", "")
         with _tools_lock:
             _tools = tools
-            _tools_status["message"] = message
+            _tools_status["messageGaf"] = messageGaf
+            _tools_status["messageObo"] = messageObo
             _tools_status["ready"] = True
     except Exception as ex:
         with _tools_lock:
-            _tools_status["message"] = f"Error loading tools: {ex}"
+            _tools_status["messageGaf"] = f"Error loading Gaf file: {ex}"
+            _tools_status["messageObo"] = f"Error loading Obo file: {ex}"
             _tools_status["ready"] = False
     finally:
         with _tools_lock:
@@ -61,12 +67,17 @@ def tools_status():
         return jsonify({
             "loading": _tools_status["loading"],
             "ready": _tools_status["ready"],
-            "message": _tools_status["message"]
+            "messageGaf": _tools_status["messageGaf"],
+            "messageObo": _tools_status["messageObo"]
         })
 
 @app.route('/GafColumnFiltering')
 def gaf_column_filtering():
-    return render_template('GafColumnFiltering.html')
+    with _tools_lock:
+        if not _tools or not _tools_status["ready"]:
+            return render_template('GafColumnFiltering.html', searchers={})
+        searchers = getattr(_tools, "gaf").searchers
+    return render_template('GafColumnFiltering.html', searchers=searchers)
 
 # @app.route ('/SegundaPagina') #volver al home
 # def SegundaPagina():

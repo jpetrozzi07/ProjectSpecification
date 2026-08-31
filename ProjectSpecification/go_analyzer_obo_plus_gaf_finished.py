@@ -1,5 +1,5 @@
-from Gaf_parser_finished import GAFparser
-from obo_parser_finished import parse_obo
+from Gaf_parser_finished import GafParser
+from obo_parser import OboParser
 import numpy as np
 import pandas as pd
 
@@ -7,9 +7,11 @@ import pandas as pd
 class GO_Tools:
     
     def __init__(self, gaf_file, obo_file):
-        self.gaf = GAFparser(gaf_file)
+        self.gaf = GafParser(gaf_file)
         self.loadGafMessage = self.gaf.load_messages
-        self.obo = parse_obo(obo_file)
+        
+        self.obo = OboParser(obo_file)
+        self.loadOboMessage = self.obo.load_messages
         
     
     def search_gaf(self):
