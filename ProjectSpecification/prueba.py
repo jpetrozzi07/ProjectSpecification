@@ -3,8 +3,10 @@ from datetime import datetime
 from go_analyzer_obo_plus_gaf_finished import GO_Tools
 import threading
 from Gaf_parser_finished import GafParser
+from gaf_endpoints import gaf_bp
 
 app = Flask(__name__) #nombre de la pagina
+app.register_blueprint(gaf_bp)
 
 # Globals to hold tools and status
 _tools = None

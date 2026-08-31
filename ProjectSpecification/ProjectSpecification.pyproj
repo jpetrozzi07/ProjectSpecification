@@ -22,6 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="gaf_endpoints.py" />
     <Compile Include="Gaf_parser_finished.py" />
     <Compile Include="GAF_PARSING.py" />
     <Compile Include="go_analyzer_obo_plus_gaf_finished.py" />
@@ -30,7 +31,6 @@
     <Compile Include="Hierarchy3.py" />
     <Compile Include="OboParsing.py" />
     <Compile Include="obo_parser.py" />
-    <Compile Include="obo_parser_finished.py" />
     <Compile Include="prueba.py" />
   </ItemGroup>
   <ItemGroup>

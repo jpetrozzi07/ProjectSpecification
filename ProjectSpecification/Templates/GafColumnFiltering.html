@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
@@ -61,10 +61,10 @@
 			<div class="row gx-lg-5">
 				<div class="col-lg-6 col-xxl-4 mb-5">
 					<div class="input-group flex-nowrap">
-				  <label for="exampleFormControlInput1" class="form-label">Search For a string.</label>
-				  <input type="email" class="form-control" id="exampleFormControlInput1" placeholder="">
-					<button type="button" class="btn btn-primary">Primary</button>
-						</div>
+						<label for="exampleFormControlInput1" class="form-label">Search For a string.</label>
+						<input type="email" class="form-control" id="exampleFormControlInput1" placeholder="">
+						<button type="button" class="btn btn-primary" id=btnSearch>Primary</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -73,5 +73,46 @@
 		<div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>
 	</footer>
 
+	<script>
+		document.getElementById('btnSearch').addEventListener('click', async function () {
+		// obtener texto de búsqueda
+		const query = document.getElementById('exampleFormControlInput1').value || '';
+
+		// obtener radio seleccionado (valor = índice)
+		const radios = document.getElementsByName('searchRadios');
+		let selectedIndex = null;
+		for (const r of radios) {
+			if (r.checked) { selectedIndex = r.value; break; }
+		}
+
+		// enviar al servidor
+		try {
+			const resp = await fetch('{{ url_for("gaf.gaf_column_filtering_search") }}', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ searcherIndex: selectedIndex, query: query })
+			});
+
+			if (!resp.ok) {
+				const text = await resp.text();
+				console.error('Search request failed:', resp.status, text);
+				return;
+			}
+
+			const results = await resp.json();
+			console.log('Search results:', results);
+
+			// Llama una función client-side para mostrar resultados si existe
+			if (typeof window.displayResultsFromServer === 'function') {
+				window.displayResultsFromServer(results);
+			} else {
+				// fallback mínimo: mostrar en consola
+				console.info('No client-side renderer found. Implement window.displayResultsFromServer(results) to render results.');
+			}
+		} catch (err) {
+			console.error('Error sending search request:', err);
+		}
+	});
+</script>
 </body>
 </html>
