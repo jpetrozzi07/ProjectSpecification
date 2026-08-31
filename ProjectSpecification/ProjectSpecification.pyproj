@@ -22,6 +22,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="similarity_endpoints.py" />
+    <Compile Include="tools_state.py" />
+    <Compile Include="neighborhood_endpoints.py" />
     <Compile Include="gaf_endpoints.py" />
     <Compile Include="Gaf_parser_finished.py" />
     <Compile Include="GAF_PARSING.py" />

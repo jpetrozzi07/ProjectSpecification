@@ -45,11 +45,178 @@
 	</header>
 	<section class="pt-4">
 		<div class="container px-lg-5">
+			<div class="row gx-lg-5">
+				<div class="col-lg-6 col-xxl-4 mb-5">
+					<div class="mb-2">
+						<label for="goTerm1" class="form-label">GO Term #1</label>
+						<input type="text" class="form-control" id="goTerm1" placeholder="">
+					</div>
+					<div class="mb-2">
+						<label for="goTerm2" class="form-label">GO Term #2</label>
+						<input type="text" class="form-control" id="goTerm2" placeholder="">
+					</div>
+				</div>
+			</div>
+			<div class="row gx-lg-5">
+				<div class="col-lg-6 col-xxl-4 mb-5">
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-primary" id="btnSearch">
+							<span id="btnSearchSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span id="btnSearchText">Search</span>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="mt-4" id="results">
+			</div>
 		</div>
 	</section>
 <footer class="py-5 bg-dark">
 	<div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>
 </footer>
+
+<script>
+(function () {
+	const btn = document.getElementById('btnSearch');
+	const spinner = document.getElementById('btnSearchSpinner');
+	const btnText = document.getElementById('btnSearchText');
+	const resultsDiv = document.getElementById('results');
+
+	function showSpinner() {
+		spinner.classList.remove('d-none');
+		btn.setAttribute('disabled', 'disabled');
+	}
+
+	function hideSpinner() {
+		spinner.classList.add('d-none');
+		btn.removeAttribute('disabled');
+	}
+
+	function renderTableFromObject(obj) {
+		const table = document.createElement('table');
+		table.className = 'table table-striped table-bordered';
+		const tbody = document.createElement('tbody');
+		for (const key of Object.keys(obj)) {
+			const tr = document.createElement('tr');
+			const th = document.createElement('th');
+			th.scope = 'row';
+			th.textContent = key;
+			const td = document.createElement('td');
+			// convert nested objects/arrays to JSON string
+			const val = obj[key];
+			td.textContent = (typeof val === 'object') ? JSON.stringify(val) : String(val);
+			tr.appendChild(th);
+			tr.appendChild(td);
+			tbody.appendChild(tr);
+		}
+		table.appendChild(tbody);
+		return table;
+	}
+
+	function renderTableFromList(list) {
+		if (list.length === 0) {
+			const p = document.createElement('p');
+			p.textContent = 'No results';
+			return p;
+		}
+		// determine columns as union of keys
+		const cols = new Set();
+		list.forEach(item => {
+			if (item && typeof item === 'object' && !Array.isArray(item)) {
+				Object.keys(item).forEach(k => cols.add(k));
+			}
+		});
+		const columns = Array.from(cols);
+		const table = document.createElement('table');
+		table.className = 'table table-striped table-bordered';
+		const thead = document.createElement('thead');
+		const headRow = document.createElement('tr');
+		columns.forEach(col => {
+			const th = document.createElement('th');
+			th.scope = 'col';
+			th.textContent = col;
+			headRow.appendChild(th);
+		});
+		thead.appendChild(headRow);
+		table.appendChild(thead);
+
+		const tbody = document.createElement('tbody');
+		list.forEach(item => {
+			const tr = document.createElement('tr');
+			columns.forEach(col => {
+				const td = document.createElement('td');
+				const val = item && (col in item) ? item[col] : '';
+				td.textContent = (typeof val === 'object') ? JSON.stringify(val) : String(val);
+				tr.appendChild(td);
+			});
+			tbody.appendChild(tr);
+		});
+		table.appendChild(tbody);
+		return table;
+	}
+
+	function renderResult(result) {
+		resultsDiv.innerHTML = '';
+		let node;
+		if (result === null || result === undefined) {
+			node = document.createElement('p');
+			node.textContent = 'No result returned';
+		} else if (Array.isArray(result)) {
+			// array -> table (list of objects) or simple list
+			if (result.length > 0 && result.every(r => r && typeof r === 'object' && !Array.isArray(r))) {
+				node = renderTableFromList(result);
+			} else {
+				// simple array -> show as JSON
+				const pre = document.createElement('pre');
+				pre.textContent = JSON.stringify(result, null, 2);
+				node = pre;
+			}
+		} else if (typeof result === 'object') {
+			node = renderTableFromObject(result);
+		} else {
+			const p = document.createElement('p');
+			p.textContent = String(result);
+			node = p;
+		}
+		resultsDiv.appendChild(node);
+	}
+
+	btn.addEventListener('click', async function () {
+		const term1 = document.getElementById('goTerm1').value.trim();
+		const term2 = document.getElementById('goTerm2').value.trim();
+		resultsDiv.innerHTML = '';
+
+		if (!term1 || !term2) {
+			resultsDiv.innerHTML = '<div class="alert alert-warning">Both terms are required.</div>';
+			return;
+		}
+
+		showSpinner();
+		try {
+			const resp = await fetch('/api/similarity', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ term1: term1, term2: term2 })
+			});
+
+			const data = await resp.json().catch(() => null);
+
+			if (!resp.ok) {
+				const msg = (data && (data.error || data.detail)) ? (data.error || data.detail) : ('HTTP ' + resp.status);
+				resultsDiv.innerHTML = '<div class="alert alert-danger">Error: ' + String(msg) + '</div>';
+			} else {
+				// success - expecting { result: ... }
+				const res = data && ('result' in data) ? data.result : data;
+				renderResult(res);
+			}
+		} catch (ex) {
+			resultsDiv.innerHTML = '<div class="alert alert-danger">Request failed: ' + String(ex) + '</div>';
+		} finally {
+			hideSpinner();
+		}
+	});
+})();
+</script>
 
 </body>
 </html>

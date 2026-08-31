@@ -3,7 +3,6 @@ from obo_parser import OboParser
 import numpy as np
 import pandas as pd
 
-
 class GO_Tools:
     
     def __init__(self, gaf_file, obo_file):
@@ -12,14 +11,12 @@ class GO_Tools:
         
         self.obo = OboParser(obo_file)
         self.loadOboMessage = self.obo.load_messages
-        
     
     def search_gaf(self):
         self.gaf.search_menu()
         
     def search_obo(self):
         self.obo.search_menu()
-        
     
     def _jaccard(self, term1, term2): #jaccard similarity, encapsulated helper. calculates by intersection over union
 

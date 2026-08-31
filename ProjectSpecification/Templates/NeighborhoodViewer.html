@@ -13,13 +13,12 @@
 	<!-- Core theme CSS (includes Bootstrap)-->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-	<!--<link href="~/css/styles.css" rel="stylesheet" />-->
 
 	<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-		<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 		<div class="container px-lg-5">
 			<a class="navbar-brand" href="#!">Go Analyzer</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
@@ -32,6 +31,7 @@
 			</div>
 		</div>
 	</nav>
+
 	<!-- Header-->
 	<header class="py-5">
 		<div class="container px-lg-5">
@@ -43,13 +43,461 @@
 			</div>
 		</div>
 	</header>
+
 	<section class="pt-4">
 		<div class="container px-lg-5">
+			<div class="row gx-lg-5">
+				<div class="col-lg-6 col-xxl-4 mb-4">
+					<div class="mb-2">
+						<label for="termInput" class="form-label">GO Term</label>
+						<input id="termInput" class="form-control" placeholder="GO:0007114">
+					</div>
+
+					<div class="mb-3">
+						<label for="neighborhoodLevel" class="form-label">Neighborhood level</label>
+						<input id="neighborhoodLevel" type="number" min="1" max="3" step="1" value="1" class="form-control w-auto">
+					</div>
+
+					<div class="d-flex gap-2">
+						<button id="btnGetNeighborhoodInfo" type="button" class="btn btn-primary">
+							<span id="btnGetNeighborhoodInfoSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span id="btnGetNeighborhoodInfoText">Get neighborhood info</span>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="mt-4" id="results">
+			</div>
 		</div>
 	</section>
-<footer class="py-5 bg-dark">
-	<div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>
-</footer>
+
+	<footer class="py-5 bg-dark">
+		<div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>
+	</footer>
+
+<script>
+/* Helpers */
+function showSpinner(btn, spinner, textEl) {
+	btn.disabled = true;
+	spinner.classList.remove('d-none');
+	textEl.classList.add('visually-hidden');
+}
+function hideSpinner(btn, spinner, textEl) {
+	btn.disabled = false;
+	spinner.classList.add('d-none');
+	textEl.classList.remove('visually-hidden');
+}
+function renderJsonOrTable(container, data) {
+	container.innerHTML = '';
+	if (!data) {
+		container.innerHTML = '<div class="alert alert-warning">No data received.</div>';
+		return;
+	}
+	if (data.error) {
+		container.innerHTML = `<div class="alert alert-danger">Error: ${String(data.error)}</div>`;
+		return;
+	}
+	// If results is an array of objects -> render table
+	if (Array.isArray(data.results) && data.results.length > 0 && typeof data.results[0] === 'object') {
+		const rows = data.results;
+		const cols = Object.keys(rows[0]);
+		const table = document.createElement('table');
+		table.className = 'table table-striped table-bordered table-sm';
+		const thead = document.createElement('thead');
+		const headRow = document.createElement('tr');
+		cols.forEach(c => { const th = document.createElement('th'); th.textContent = c; headRow.appendChild(th); });
+		thead.appendChild(headRow);
+		table.appendChild(thead);
+		const tbody = document.createElement('tbody');
+		rows.forEach(r => {
+			const tr = document.createElement('tr');
+			cols.forEach(c => {
+				const td = document.createElement('td');
+				let v = r[c];
+				if (v === null || v === undefined) v = '';
+				else if (typeof v === 'object') v = JSON.stringify(v);
+				td.textContent = String(v);
+				tr.appendChild(td);
+			});
+			tbody.appendChild(tr);
+		});
+		table.appendChild(tbody);
+		container.appendChild(table);
+		return;
+	}
+	// fallback: pretty JSON
+	const pre = document.createElement('pre');
+	pre.textContent = JSON.stringify(data, null, 2);
+	container.appendChild(pre);
+}
+
+/* renderGridWithColumnFilters: supports arrays of objects or primitives.
+   Now includes client-side pagination, page-size selector and page navigation.
+*/
+function renderGridWithColumnFilters(container, rows) {
+	container.innerHTML = '';
+	if (!Array.isArray(rows) || rows.length === 0) {
+		container.innerHTML = '<div class="alert alert-warning">No rows to display.</div>';
+		return;
+	}
+
+	// Normalize primitive arrays to objects with single 'Value' column
+	let normalized = rows;
+	let cols;
+	if (typeof rows[0] === 'object' && rows[0] !== null && !Array.isArray(rows[0])) {
+		cols = Object.keys(rows[0]);
+	} else {
+		cols = ['Value'];
+		normalized = rows.map(v => ({ Value: v }));
+	}
+
+	// Local in-memory state for this grid instance
+	const state = {
+		allRows: normalized,
+		cols: cols,
+		filters: {},
+		pageSize: 10,
+		currentPage: 1
+	};
+
+	// Create controls
+	function createPageSizeControl() {
+		const wrapper = document.createElement('div');
+		wrapper.className = 'd-flex align-items-center mb-2 gap-2';
+
+		const label = document.createElement('label');
+		label.className = 'form-label mb-0';
+		label.textContent = 'Rows per page:';
+		label.setAttribute('for', 'pageSizeSelect');
+
+		const select = document.createElement('select');
+		select.id = 'pageSizeSelect';
+		select.className = 'form-select form-select-sm w-auto';
+		[10, 20, 50].forEach(sz => {
+			const opt = document.createElement('option');
+			opt.value = String(sz);
+			opt.textContent = String(sz);
+			select.appendChild(opt);
+		});
+		select.value = String(state.pageSize);
+		select.addEventListener('change', function () {
+			state.pageSize = parseInt(this.value, 10);
+			state.currentPage = 1;
+			renderTablePage(1);
+		});
+
+		const info = document.createElement('div');
+		info.id = 'resultsCountInfo';
+		info.className = 'ms-3 text-muted';
+
+		wrapper.appendChild(label);
+		wrapper.appendChild(select);
+		wrapper.appendChild(info);
+		return wrapper;
+	}
+
+	function createPaginationContainer() {
+		const nav = document.createElement('nav');
+		nav.ariaLabel = 'Results pagination';
+		nav.className = 'mt-2';
+		return nav;
+	}
+
+	function renderPaginationControls(containerNav, totalPages, currentPage) {
+		containerNav.innerHTML = '';
+		if (totalPages <= 1) return;
+
+		const ul = document.createElement('ul');
+		ul.className = 'pagination pagination-sm';
+
+		// Prev
+		const prevLi = document.createElement('li');
+		prevLi.className = 'page-item ' + (currentPage === 1 ? 'disabled' : '');
+		const prevA = document.createElement('a');
+		prevA.className = 'page-link';
+		prevA.href = '#';
+		prevA.textContent = 'Previous';
+		prevA.addEventListener('click', function (e) {
+			e.preventDefault();
+			if (currentPage > 1) {
+				state.currentPage = currentPage - 1;
+				renderTablePage(state.currentPage);
+			}
+		});
+		prevLi.appendChild(prevA);
+		ul.appendChild(prevLi);
+
+		// page numbers (showing a window)
+		const maxButtons = 7;
+		let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+		let end = start + maxButtons - 1;
+		const total = totalPages;
+		if (end > total) { end = total; start = Math.max(1, end - maxButtons + 1); }
+
+		for (let p = start; p <= end; p++) {
+			const li = document.createElement('li');
+			li.className = 'page-item ' + (p === currentPage ? 'active' : '');
+			const a = document.createElement('a');
+			a.className = 'page-link';
+			a.href = '#';
+			a.textContent = String(p);
+			a.addEventListener('click', function (e) {
+				e.preventDefault();
+				state.currentPage = p;
+				renderTablePage(p);
+			});
+			li.appendChild(a);
+			ul.appendChild(li);
+		}
+
+		// Next
+		const nextLi = document.createElement('li');
+		nextLi.className = 'page-item ' + (currentPage === totalPages ? 'disabled' : '');
+		const nextA = document.createElement('a');
+		nextA.className = 'page-link';
+		nextA.href = '#';
+		nextA.textContent = 'Next';
+		nextA.addEventListener('click', function (e) {
+			e.preventDefault();
+			if (currentPage < totalPages) {
+				state.currentPage = currentPage + 1;
+				renderTablePage(state.currentPage);
+			}
+		});
+		nextLi.appendChild(nextA);
+		ul.appendChild(nextLi);
+
+		containerNav.appendChild(ul);
+	}
+
+	// Build table skeleton
+	const wrapperDiv = document.createElement('div');
+
+	// Controls container (will contain page-size control + page info)
+	const controlsDiv = document.createElement('div');
+	controlsDiv.className = 'd-flex justify-content-between align-items-center flex-wrap mb-2';
+	wrapperDiv.appendChild(controlsDiv);
+
+	// Table
+	const table = document.createElement('table');
+	table.className = 'table table-striped table-bordered table-sm';
+	table.style.whiteSpace = 'nowrap';
+
+	// Header row (sortable)
+	const thead = document.createElement('thead');
+	const headerRow = document.createElement('tr');
+	state.cols.forEach(col => {
+		const th = document.createElement('th');
+		th.className = 'align-middle';
+		th.style.cursor = 'pointer';
+		th.textContent = col;
+		th.dataset.col = col;
+		th.dataset.sort = 'none'; // none | asc | desc
+		th.addEventListener('click', () => {
+			const current = th.dataset.sort;
+			const newSort = current === 'asc' ? 'desc' : 'asc';
+			// reset others
+			Array.from(headerRow.children).forEach(h => h.dataset.sort = 'none');
+			th.dataset.sort = newSort;
+			// whenever sort changes, go back to first page
+			state.currentPage = 1;
+			renderTablePage(1);
+		});
+		headerRow.appendChild(th);
+	});
+	thead.appendChild(headerRow);
+
+	// Filter row
+	const filterRow = document.createElement('tr');
+	const filters = state.filters;
+	state.cols.forEach(col => {
+		const th = document.createElement('th');
+		const input = document.createElement('input');
+		input.type = 'search';
+		input.className = 'form-control form-control-sm';
+		input.placeholder = 'Filter';
+		input.dataset.col = col;
+		input.addEventListener('input', () => {
+			const v = input.value.trim().toLowerCase();
+			if (v) filters[col] = v;
+			else delete filters[col];
+			state.currentPage = 1;
+			renderTablePage(1);
+		});
+		th.appendChild(input);
+		filterRow.appendChild(th);
+	});
+thead.appendChild(filterRow);
+table.appendChild(thead);
+
+const tbody = document.createElement('tbody');
+table.appendChild(tbody);
+
+wrapperDiv.appendChild(table);
+
+// pagination nav placeholder
+const paginationNav = createPaginationContainer();
+wrapperDiv.appendChild(paginationNav);
+
+// attach to container
+container.appendChild(wrapperDiv);
+
+// Helper: get current sort state
+function getSortState() {
+	const ths = headerRow.children;
+	for (let i = 0; i < ths.length; i++) {
+		const th = ths[i];
+		if (th.dataset.sort && th.dataset.sort !== 'none') {
+			return { col: th.dataset.col, dir: th.dataset.sort };
+		}
+	}
+	return null;
+}
+
+// Applies filters and sorting and returns the resulting array
+function getFilteredSortedRows() {
+	let filtered = state.allRows.filter(r => {
+		for (const k in state.filters) {
+			const val = (r[k] === null || r[k] === undefined) ? '' : String(r[k]);
+			if (!val.toLowerCase().includes(state.filters[k])) return false;
+		}
+		return true;
+	});
+
+	const sort = getSortState();
+	if (sort) {
+		const col = sort.col;
+		const dir = sort.dir === 'asc' ? 1 : -1;
+		filtered.sort((a, b) => {
+			const va = a[col] === null || a[col] === undefined ? '' : a[col];
+			const vb = b[col] === null || b[col] === undefined ? '' : b[col];
+			const na = parseFloat(va);
+			const nb = parseFloat(vb);
+			if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+				return (na - nb) * dir;
+			}
+			const sa = String(va).toLowerCase();
+			const sb = String(vb).toLowerCase();
+			if (sa < sb) return -1 * dir;
+			if (sa > sb) return 1 * dir;
+			return 0;
+		});
+	}
+
+	return filtered;
+}
+
+function renderTablePage(pageIndex) {
+	const rowsAll = getFilteredSortedRows();
+	const totalRows = rowsAll.length;
+	const pageSize = state.pageSize || 10;
+	const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+	const safePage = Math.min(Math.max(1, pageIndex), totalPages);
+	state.currentPage = safePage;
+
+	// rebuild controls
+	controlsDiv.innerHTML = '';
+	const leftControls = createPageSizeControl();
+	controlsDiv.appendChild(leftControls);
+
+	const rightControls = document.createElement('div');
+	rightControls.className = 'text-end text-muted';
+	rightControls.innerHTML = `<small>Page ${safePage} of ${totalPages}</small>`;
+	controlsDiv.appendChild(rightControls);
+
+	// update summary
+	const startIndex = (safePage - 1) * pageSize;
+	const endIndex = Math.min(startIndex + pageSize, totalRows);
+
+	// summary element
+	const summary = document.createElement('div');
+	summary.className = 'mb-2';
+	summary.innerHTML = `<strong>Results:</strong> ${totalRows} &nbsp; <small class="text-muted">showing ${totalRows === 0 ? 0 : (startIndex + 1)} - ${endIndex}</small>`;
+	// ensure summary appears before table (insert at top of wrapper)
+	// remove previous summary if exists
+	const existingSummary = wrapperDiv.querySelector('.mb-2');
+	if (existingSummary) existingSummary.remove();
+	wrapperDiv.insertBefore(summary, table);
+
+	// render table body (page slice)
+	tbody.innerHTML = '';
+	if (totalRows === 0) {
+		const info = document.createElement('tr');
+		const td = document.createElement('td');
+		td.colSpan = state.cols.length;
+		td.className = 'text-center';
+		td.textContent = 'No results found.';
+		info.appendChild(td);
+		tbody.appendChild(info);
+		// hide pagination
+		paginationNav.innerHTML = '';
+		return;
+	}
+
+	const pageRows = rowsAll.slice(startIndex, endIndex);
+	pageRows.forEach(r => {
+		const tr = document.createElement('tr');
+		state.cols.forEach(c => {
+			const td = document.createElement('td');
+			let v = r[c];
+			if (v === null || v === undefined) v = '';
+			else if (typeof v === 'object') v = JSON.stringify(v);
+			td.textContent = String(v);
+			tr.appendChild(td);
+		});
+		tbody.appendChild(tr);
+	});
+
+	// render pagination controls
+	renderPaginationControls(paginationNav, totalPages, safePage);
+}
+
+// initial render
+renderTablePage(1);
+}
+
+document.getElementById('btnGetNeighborhoodInfo').addEventListener('click', async function () {
+	const term = (document.getElementById('termInput').value || '').trim();
+	const level = parseInt(document.getElementById('neighborhoodLevel').value || '1', 10) || 1;
+
+	const btn = document.getElementById('btnGetNeighborhoodInfo');
+	const spinner = document.getElementById('btnGetNeighborhoodInfoSpinner');
+	const textEl = document.getElementById('btnGetNeighborhoodInfoText');
+	const resultsContainer = document.getElementById('results');
+
+	showSpinner(btn, spinner, textEl);
+
+	try {
+		const resp = await fetch('{{ url_for("neighborhood.get_neighborhood_info") }}', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ term: term, level: level })
+		});
+		if (!resp.ok) {
+			const txt = await resp.text();
+			console.error('get_neighborhood_info failed', resp.status, txt);
+			resultsContainer.innerHTML = `<div class="alert alert-danger">Server error: ${resp.status}</div>`;
+			return;
+		}
+		const data = await resp.json();
+
+		// Always show a table using the array under "info"
+		const rows = (data && Array.isArray(data.info)) ? data.info : [];
+		if (!rows || rows.length === 0) {
+			resultsContainer.innerHTML = '<div class="alert alert-warning">No info available to display.</div>';
+		} else {
+			// render interactive grid (handles object rows and primitive rows) with pagination
+			renderGridWithColumnFilters(resultsContainer, rows);
+		}
+	} catch (err) {
+		console.error('Error calling get_neighborhood_info', err);
+		resultsContainer.innerHTML = `<div class="alert alert-danger">Request error: ${String(err)}</div>`;
+	} finally {
+		hideSpinner(btn, spinner, textEl);
+	}
+});
+</script>
 
 </body>
 </html>

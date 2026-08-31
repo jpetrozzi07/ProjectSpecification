@@ -97,7 +97,7 @@ class OboParser:
         self.filepath = filepath
         self.terms = {} #information is displayed in rows, not columns, so we search in between the terms and displayh them as columns
         self.df, self.load_messages = self._load_obo()
-        self.searchers = {'GO_ID': id_searcher(self.df),'Gene Symbol': name_searcher(self.df),'Obsolete Terms': obsolete_searcher(self.df),'Namespace': namespace_searcher(self.df), 'Partial Name': partial_name_searcher(self.df)}
+        self.searchers = {'GO_ID': id_searcher(self.df),'Name': name_searcher(self.df),'Obsolete Terms': obsolete_searcher(self.df),'Namespace': namespace_searcher(self.df), 'Partial Name': partial_name_searcher(self.df)}
         
         
     def _load_obo(self): #protected from external code
@@ -305,7 +305,7 @@ class OboParser:
                 
                     elif selection == '2':
                         query = input('Enter the Name to be searched: ')
-                        searcher = self.searchers['Gene Symbol']
+                        searcher = self.searchers['Name']
                         results = searcher.search(query)
                         self._display_results(results, searcher, query)
                 
