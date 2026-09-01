@@ -22,6 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="matrix_endpoints.py" />
     <Compile Include="similarity_endpoints.py" />
     <Compile Include="tools_state.py" />
     <Compile Include="neighborhood_endpoints.py" />
@@ -81,6 +82,7 @@
     <Content Include="static\js\bootstrap.js.map" />
     <Content Include="static\js\bootstrap.min.js" />
     <Content Include="static\js\bootstrap.min.js.map" />
+    <Content Include="static\js\matrix_renderer.js" />
     <Content Include="templates\GafColumnFiltering.html" />
     <Content Include="templates\home.html" />
     <Content Include="templates\OboColumnFiltering.html" />

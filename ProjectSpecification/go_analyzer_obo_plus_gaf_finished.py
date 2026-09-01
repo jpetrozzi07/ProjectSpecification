@@ -114,7 +114,8 @@ class GO_Tools:
         print(f"Genes with 6-20 annotations: {np.sum((gene_annotations > 5) & (gene_annotations <= 20)):,}")
         print(f"Genes with >20 annotations: {np.sum(gene_annotations > 20):,}")
         
-        
+        return matrix, genes, go_terms
+
     def get_neighborhood(self, term_id, distance=1):
 
         if self.obo.df.empty: #gets all neighbor terms, this is quite similar to finding parents or children, but it also can find the parents and childer of such parents and children...

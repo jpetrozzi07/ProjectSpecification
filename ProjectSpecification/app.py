@@ -9,12 +9,14 @@ from gaf_endpoints import gaf_bp
 from obo_endpoints import obo_bp
 from neighborhood_endpoints import neighborhood_bp
 from similarity_endpoints import similarity_bp
+from matrix_endpoints import matrix_bp
 
 app = Flask(__name__)  # nombre de la pagina
 app.register_blueprint(gaf_bp)
 app.register_blueprint(obo_bp)
 app.register_blueprint(neighborhood_bp)
 app.register_blueprint(similarity_bp)
+app.register_blueprint(matrix_bp)
 
 def _load_tools_bg(gaf_path: str, obo_path: str):
     # Use attributes on the tools_state module to avoid import-time cycles

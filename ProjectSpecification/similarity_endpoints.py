@@ -1,13 +1,3 @@
-"""
-API endpoints for similarity calculations.
-
-Exposes POST /api/similarity
-Body (JSON): { "term1": "<term1>", "term2": "<term2>" }
-
-This module will:
- - obtain a `GO_Tools` instance from `tools_states` if available, or instantiate a new one
- - call `compare_similarity_methods(term1, term2)` and return JSON result
-"""
 from flask import Blueprint, request, jsonify, current_app
 import traceback
 
@@ -60,7 +50,7 @@ def similarity():
         # Expect compare_similarity_methods(term1, term2) or compare_similarity_methods(self, term1, term2)
         result = func(parsed['term1'], parsed['term2'])
     except Exception as ex:
-        current_app.logger.exception("Error in get_neighborhood:")
+        current_app.logger.exception("Error in compare_similarity_methods:")
         return jsonify({'error': str(ex), 'trace': traceback.format_exc()}), 500
 
     return jsonify({"result": result})

@@ -17,6 +17,29 @@
 
 	<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+	<style>
+		.matrix-grid .row { margin: 0; }
+		.matrix-grid .cell {
+		  border: 1px solid #dee2e6;
+		  padding: 0.35rem 0.5rem;
+		  text-align: center;
+		  word-break: break-word;
+		  background: #fff;
+		  min-height: 2rem;
+		}
+		.matrix-grid .header .cell { font-weight: 600; background: #f8f9fa; }
+		.matrix-wrapper { overflow:auto; width: max-content;}
+		.first-col { width:100px; text-align: left; padding-left: 0.75rem;  background:#f1f3f5; white-space:nowrap; }
+
+		.testimonial-group > .row {
+		  overflow-x: auto;
+		  white-space: nowrap;
+		}
+		.testimonial-group > .row > .col-xs-4 {
+		  display: inline-block;
+		  float: none;
+		}
+	</style>
 </head>
 <body>
 		<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -44,12 +67,18 @@
 		</div>
 	</header>
 	<section class="pt-4">
-		<div class="container px-lg-5">
+	  <div class="container testimonial-group">
+		<h5>Viewing Annotation Matrix</h5>
+		<div id="matrix-wrapper" class="matrix-wrapper border rounded p-2">
+		  <div id="matrix-container" class="matrix-grid"></div>
 		</div>
+	  </div>
 	</section>
+	<script src="/static/js/matrix_renderer.js"></script>
 <footer class="py-5 bg-dark">
 	<div class="container"><p class="m-0 text-center text-white">Copyright &copy; Your Website 2023</p></div>
 </footer>
+
 
 </body>
 </html>
