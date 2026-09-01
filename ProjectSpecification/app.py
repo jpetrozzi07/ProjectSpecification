@@ -154,3 +154,6 @@ def search_hierarchy_results():
                 pass
 
     return jsonify({'parents': parents, 'children': children})
+
+if __name__ == '__main__':
+    app.run()
