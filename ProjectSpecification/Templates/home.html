@@ -23,9 +23,9 @@
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <style>
-        /* Minimal styling */
+     
         #status {
-            margin: 1rem;
+            margin: rem;
             font-family: Arial, sans-serif;
         }
 
@@ -47,6 +47,7 @@
                 // Poll status
                 const pollInterval = 500; // ms
                 const statusEl = document.getElementById('loading');
+                const dataSource = document.getElementById('dataSource');
                 const messageGaf = document.getElementById('messageGaf');
                 const messageObo = document.getElementById('messageObo');
                 //const messageOboFull = document.getElementById('messageOboFull');
@@ -68,8 +69,10 @@
                     }
                     if (data.ready) {
                         statusEl.style.display = 'none';
+                        dataSource.style.display = 'block';
                         // GAF message (short)
                         messageGaf.style.display = 'block';
+                        messageGaf.style.textOrientation = 'upleft';
                         messageGaf.textContent = data.messageGaf || 'GAF tools loaded.';
                         // OBO: show short summary, keep full message hidden until user expands
                         messageObo.style.display = 'block';
@@ -127,15 +130,13 @@
                     class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="#!">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#!">About</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#!">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="/">Home</a></li>
                 </ul>
             </div>
         </div>
     </nav>
     <!-- Header-->
-    <header class="py-5">
+    <header class="py-4">
         <div class="container px-lg-5">
             <div class="p-4 p-lg-5 bg-light rounded-3 text-center">
                 <div class="m-4 m-lg-5">
@@ -153,6 +154,7 @@
                 <div class="m-1 m-lg-1">
                     <div id="status">
                         <div id="loading">Initializing tools... <span id="spinner">⏳</span></div>
+                        <div id= "dataSource"style ="display:none;"><h4>Data Source:</h4></div>
                         <div id="messageGaf" style="display:none;"></div>
                         <div id="messageObo" style="display:none;"></div>
                     </div>
@@ -165,7 +167,7 @@
                     <div class="card bg-light border-0 h-100">
                         <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
                             <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4">
-                                <a href="{{ url_for('gaf_column_filtering') }}" class="text-white" title="Gaf Column Filtering"
+                                <a href="{{ url_for('gaf_column_filtering') }}" class="text-white" title="Gaf Column Filtering."
                                     aria-label="Gaf Column Filtering">
                                     <i class="bi bi-funnel"></i>
                                 </a>
@@ -184,8 +186,8 @@
                                     <i class="bi bi-bar-chart-steps"></i>
                                 </a>
                             </div>
-                            <h2 class="fs-4 fw-bold">Ontology Menu from OBO file.</h2>
-                            <p class="mb-0">Analyze OBO files by searching for specific GO Terms to view definitions and hierarchical relationships between different terms.</p>
+                            <h2 class="fs-4 fw-bold">Column Filtering from OBO file.</h2>
+                            <p class="mb-0">Analyze OBO files by searching for specific GO Terms to view definitions.</p>
                         </div>
                     </div>
                 </div>
@@ -235,12 +237,12 @@
                     <div class="card bg-light border-0 h-100">
                         <div class="card-body text-center p-4 p-lg-5 pt-0 pt-lg-0">
                             <div class="feature bg-primary bg-gradient text-white rounded-3 mb-4 mt-n4"0>
-                                <a href="{{ url_for('instructions_viewer') }}" class="text-white" title="View instructions to see how the software works"
-                                   aria-label="View instructions to see how the software works">
+                                <a href="{{ url_for('hierarchy_page') }}" class="text-white" title="Search for the direct parent and child terms of a specific GO ID to understand its ontological relationships."
+                                   aria-label="Search for the direct parent and child terms of a specific GO ID to understand its ontological relationships.">
                                     <i class="bi bi-card-checklist"></i>
                                 </a>
                             </div>
-                            <h2 class="fs-4 fw-bold">Software Instructions</h2>
+                            <h2 class="fs-4 fw-bold">Search GO Hierarchy in OBO files.</h2>
                             <p class="mb-0">View instructions on how to use all the search mechanisms the software provides.</p>
                         </div>
                     </div>

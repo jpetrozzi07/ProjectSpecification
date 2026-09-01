@@ -22,7 +22,6 @@ def similarity():
     except Exception as ex:
         return jsonify({'error': str(ex)}), 400
 
-    # Import shared state from tools_state at request time
     from tools_state import _tools, _tools_lock, _tools_status
     
     with _tools_lock:
@@ -45,9 +44,9 @@ def similarity():
         current_app.logger.warning("No compare_similarity_methods function found on tools object")
         return jsonify({'results': [], 'warning': 'compare_similarity_methods implementation not found on server'}), 501
 
-    # call the target method
+
     try:
-        # Expect compare_similarity_methods(term1, term2) or compare_similarity_methods(self, term1, term2)
+       
         result = func(parsed['term1'], parsed['term2'])
     except Exception as ex:
         current_app.logger.exception("Error in compare_similarity_methods:")

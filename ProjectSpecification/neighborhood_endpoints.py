@@ -1,4 +1,3 @@
-# neighborhood_endpoints.py
 from flask import Blueprint, request, jsonify, current_app
 import traceback
 
@@ -25,7 +24,7 @@ def get_neighborhood():
     except Exception as ex:
         return jsonify({'error': str(ex)}), 400
 
-    # Import shared state from tools_state at request time
+
     from tools_state import _tools, _tools_lock, _tools_status
 
     with _tools_lock:
@@ -36,7 +35,7 @@ def get_neighborhood():
 
     current_app.logger.info("get_neighborhood called payload=%s", parsed['raw'])
 
-    # Try to find a sensible function to compute neighborhood
+
     func = None
     if hasattr(tools, 'get_neighborhood'):
         func = getattr(tools, 'get_neighborhood')

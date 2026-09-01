@@ -21,13 +21,11 @@
 <body>
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 		<div class="container px-lg-5">
-			<a class="navbar-brand" href="#!">Go Analyzer</a>
+			<a class="navbar-brand" href="/">Go Analyzer</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-					<li class="nav-item"><a class="nav-link active" aria-current="page" href="#!">Home</a></li>
-					<li class="nav-item"><a class="nav-link" href="#!">About</a></li>
-					<li class="nav-item"><a class="nav-link" href="#!">Contact</a></li>
+					<li class="nav-item"><a class="nav-link active" aria-current="page" href="/">Home</a></li>
 				</ul>
 			</div>
 		</div>
@@ -60,9 +58,13 @@
 			</div>
 			<div class="row gx-lg-5">
 				<div class="col-lg-6 col-xxl-4 mb-5">
-					<div class="input-group flex-nowrap">
+					<div class="mb-2">
 						<label for="searchString" class="form-label">Search For a string.</label>
 						<input type="text" class="form-control" id="searchString" placeholder="">
+					
+					</div>
+
+					<div class ="mb-3">
 						<button type="button" class="btn btn-primary" id="btnSearch">
 							<span id="btnSearchSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span id="btnSearchText">Search</span>
@@ -80,19 +82,19 @@
 
 	<script>
 		document.getElementById('btnSearch').addEventListener('click', async function () {
-		// obtener texto de búsqueda
+
 		const query = document.getElementById('searchString').value || '';
 
-		// obtener radio seleccionado (valor = índice)
+
 		const radios = document.getElementsByName('searchRadios');
 		let selectedIndex = null;
 		for (const r of radios) {
 			if (r.checked) { selectedIndex = r.value; break; }
 		}
-		// asegurar número entero y valor por defecto
+
 		const indexToSend = (selectedIndex !== null) ? parseInt(selectedIndex, 10) : 0;
 
-		// spinner + disable button
+
 		const btn = document.getElementById('btnSearch');
 		const spinner = document.getElementById('btnSearchSpinner');
 		const btnText = document.getElementById('btnSearchText');
@@ -100,7 +102,6 @@
 		spinner.classList.remove('d-none');
 		btnText.classList.add('visually-hidden');
 
-		// enviar al servidor
 		try {
 			const resp = await fetch('{{ url_for("obo.obo_column_filtering_search") }}', {
 				method: 'POST',
@@ -118,7 +119,7 @@
 			const results = await resp.json();
 			console.log('Search results:', results);
 
-			// Llama una función client-side para mostrar resultados si existe
+
 			if (typeof window.displayResultsFromServer === 'function') {
 				window.displayResultsFromServer(results);
 			} else {
@@ -135,8 +136,7 @@
 		}
 	});
 
-	// Renderer: injects a Bootstrap responsive table showing results into #results
-	// Implements client-side in-memory pagination with page size selector (10,20,50)
+
 	(function () {
 		// in-memory cache
 		window._resultsCache = {
@@ -196,7 +196,6 @@
 			const ul = document.createElement('ul');
 			ul.className = 'pagination pagination-sm';
 
-			// Prev
 			const prevLi = document.createElement('li');
 			prevLi.className = 'page-item ' + (currentPage === 1 ? 'disabled' : '');
 			const prevA = document.createElement('a');
@@ -213,7 +212,6 @@
 			prevLi.appendChild(prevA);
 			ul.appendChild(prevLi);
 
-			// page numbers (showing a window if many)
 			const maxButtons = 7;
 			let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
 			let end = start + maxButtons - 1;
@@ -235,7 +233,7 @@
 				ul.appendChild(li);
 			}
 
-			// Next
+
 			const nextLi = document.createElement('li');
 			nextLi.className = 'page-item ' + (currentPage === totalPages ? 'disabled' : '');
 			const nextA = document.createElement('a');
@@ -267,7 +265,7 @@
 			const safePage = Math.min(Math.max(1, pageIndex), totalPages);
 			window._resultsCache.currentPage = safePage;
 
-			// Controls: page size selector + count info
+
 			const controlsDiv = document.createElement('div');
 			controlsDiv.className = 'd-flex justify-content-between align-items-center flex-wrap mb-2';
 
@@ -281,7 +279,7 @@
 
 			container.appendChild(controlsDiv);
 
-			// summary/info
+
 			const startIndex = (safePage - 1) * pageSize;
 			const endIndex = Math.min(startIndex + pageSize, totalRows);
 
@@ -299,14 +297,13 @@
 				return;
 			}
 
-			// Build table
+
 			const responsiveDiv = document.createElement('div');
 			responsiveDiv.className = 'table-responsive';
 
 			const table = document.createElement('table');
 			table.className = 'table table-striped table-bordered table-sm';
 
-			// Header
 			const thead = document.createElement('thead');
 			const headRow = document.createElement('tr');
 			columns.forEach(col => {
@@ -318,7 +315,7 @@
 			thead.appendChild(headRow);
 			table.appendChild(thead);
 
-			// Body (page slice)
+
 			const tbody = document.createElement('tbody');
 			const pageRows = rows.slice(startIndex, endIndex);
 			pageRows.forEach(item => {
@@ -338,13 +335,13 @@
 			responsiveDiv.appendChild(table);
 			container.appendChild(responsiveDiv);
 
-			// Pagination controls
+
 			const paginationNav = createPaginationContainer();
 			container.appendChild(paginationNav);
 			renderPaginationControls(paginationNav, totalPages, safePage);
 		}
 
-		// Public function called from search response handler
+
 		window.displayResultsFromServer = function (data) {
 			const container = document.getElementById('results');
 			container.innerHTML = '';
@@ -365,10 +362,9 @@
 				return;
 			}
 
-			// Derive columns from the first row's keys (stable order)
 			const columns = Object.keys(rows[0]);
 
-			// Save to in-memory cache and render first page
+
 			window._resultsCache.rows = rows;
 			window._resultsCache.columns = columns;
 			window._resultsCache.currentPage = 1;

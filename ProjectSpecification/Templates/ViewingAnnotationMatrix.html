@@ -18,28 +18,94 @@
 	<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 	<style>
-		.matrix-grid .row { margin: 0; }
-		.matrix-grid .cell {
-		  border: 1px solid #dee2e6;
-		  padding: 0.35rem 0.5rem;
-		  text-align: center;
-		  word-break: break-word;
-		  background: #fff;
-		  min-height: 2rem;
-		}
-		.matrix-grid .header .cell { font-weight: 600; background: #f8f9fa; }
-		.matrix-wrapper { overflow:auto; width: max-content;}
-		.first-col { width:100px; text-align: left; padding-left: 0.75rem;  background:#f1f3f5; white-space:nowrap; }
 
-		.testimonial-group > .row {
-		  overflow-x: auto;
-		  white-space: nowrap;
-		}
-		.testimonial-group > .row > .col-xs-4 {
-		  display: inline-block;
-		  float: none;
-		}
-	</style>
+    #matrix-wrapper {
+        width: 100%;      
+        max-height: 70vh;  
+        overflow-x: auto; 
+        overflow-y: auto;  
+        -webkit-overflow-scrolling: touch; 
+    }
+
+    #matrix-container {
+        width: max-content; 
+        min-width: 100%; 
+    }
+
+    .matrix-grid .row { 
+        margin: 0; 
+        display: flex; /* Ensures all cells in a row line up horizontally */
+    }
+
+
+    .matrix-grid .cell {
+        border: 1px solid #dee2e6;
+        padding: 0.35rem 0.5rem;
+        text-align: center;
+        background: #fff;
+        min-height: 2rem;
+        white-space: nowrap; 
+        
+
+        min-width: 120px; 
+        max-width: 120px; 
+        overflow: hidden;
+        text-overflow: ellipsis; /* If a GO ID is super long, it will show "..." instead of stretching */
+    }
+
+
+    .matrix-grid .header .cell { 
+        font-weight: 600; 
+        background: #f8f9fa; 
+        position: sticky;    
+        top: 0;              
+        z-index: 5;          
+        
+
+        min-width: 120px; 
+        max-width: 120px; 
+        display: flex; /* Centers the GO ID text within the fixed width */
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    .first-col { 
+        width: 100px; 
+        min-width: 100px; 
+        max-width: 100px; 
+        text-align: left; 
+        padding-left: 0.75rem;  
+        background: #f1f3f5; 
+        white-space: nowrap; 
+        position: sticky; 
+        left: 0; 
+        z-index: 10; 
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); 
+    }
+
+
+    html, body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    
+    section.pt-4, .container.testimonial-group {
+        max-width: 100%;
+        overflow-x: hidden;
+        overflow-y: hidden; 
+    }
+    
+
+    .testimonial-group > .row {
+        overflow-x: visible;
+        white-space: normal;
+    }
+    .testimonial-group > .row > .col-xs-4 {
+        display: block;
+        float: none;
+    }
+</style>
 </head>
 <body>
 		<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -48,9 +114,7 @@
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-					<li class="nav-item"><a class="nav-link active" aria-current="page" href="#!">Home</a></li>
-					<li class="nav-item"><a class="nav-link" href="#!">About</a></li>
-					<li class="nav-item"><a class="nav-link" href="#!">Contact</a></li>
+					<li class="nav-item"><a class="nav-link active" aria-current="page" href="/">Home</a></li>
 				</ul>
 			</div>
 		</div>
@@ -69,10 +133,28 @@
 	<section class="pt-4">
 	  <div class="container testimonial-group">
 		<h5>Viewing Annotation Matrix</h5>
+
+	<div>
+			<h6 class="fw-bold">What does this matrix mean?</h6>
+     	 	  <ul>
+			<li>The result shown is a reduced version to display only a 100x100 matrix.</li>
+         		   <li><strong>0 values</strong> are written if a gene is NOT annotated to the GO Term.</li>
+           		 <li><strong>1 values</strong> are written if a gene IS annotated to the GO Term.</li>
+           		 <li><strong>X-Axis:</strong> GO Terms</li>
+            		<li><strong>Y-Axis:</strong> Gene Names</li>
+		<li>---------------------------</li>
+		<li><strong>Most Annotated Gene:</strong> ZNF892 </li>
+		<li><strong>Most Common GO Term:</strong> GO:0005886 </li>
+		<li><strong>Genes with more than 5 annotations:</strong> 1% </li>
+        	</ul>
+	</div>
 		<div id="matrix-wrapper" class="matrix-wrapper border rounded p-2">
 		  <div id="matrix-container" class="matrix-grid"></div>
 		</div>
 	  </div>
+		
+	
+
 	</section>
 	<script src="/static/js/matrix_renderer.js"></script>
 <footer class="py-5 bg-dark">

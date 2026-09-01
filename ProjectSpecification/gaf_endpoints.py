@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app
 import traceback
 import math
 import numpy as np
@@ -14,7 +14,7 @@ def _get_parser():
         # obtiene ruta del GAF desde la configuración de la app o usa el archivo por defecto
         gaf_path = current_app.config.get('GAF_FILEPATH', 'goa_human.gaf')
         try:
-            import Gaf_parser_finished as gaf_mod
+            import gaf_parser as gaf_mod
             _parser = gaf_mod.GafParser(gaf_path)
         except Exception as e:
             # deja la excepción para manejarla en la ruta

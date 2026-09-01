@@ -1,4 +1,4 @@
-from Gaf_parser_finished import GafParser
+from gaf_parser import GafParser
 from obo_parser import OboParser
 import numpy as np
 import pandas as pd

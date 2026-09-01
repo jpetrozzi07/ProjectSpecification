@@ -107,7 +107,7 @@ class OboParser:
             messages.append(str(msg))
             print(msg)
 
-        _log(f"Loading OBO file: {self.filepath}")     #pandas method avoided because obo file functions in rows, not columns unlike gaf file, leading to differfent reading
+        _log(f"OBO file: {self.filepath}")     #pandas method avoided because obo file functions in rows, not columns unlike gaf file, leading to differfent reading
        
         terms_data = []
         current_term = {}
@@ -218,15 +218,6 @@ class OboParser:
             _log(f"❌ Error loading OBO file: {e}")
             string = "\n".join(messages)
             return pd.DataFrame(), string
-    
-            
-        # except FileNotFoundError:
-        #     print(f"❌ File not found: {self.filepath}")
-        #     return pd.DataFrame()
-        # except Exception as e:
-        #     print(f"❌ Error loading OBO file: {e}")
-        #     return pd.DataFrame()
-    
     
     def get_term(self, term_id):
         results = self.df[self.df['id'] == term_id]
@@ -444,9 +435,6 @@ class OboParser:
             print('')
             print(children[['id', 'name']].to_string(index=False))
         
-        # explore = input('Enter a GO ID to explore (or press Enter to return): ').strip() #option to keep searching after a filtration is done
-        # if explore:
-        # self._display_term_details(term_id)
     
     def _display_statistics(self):
     

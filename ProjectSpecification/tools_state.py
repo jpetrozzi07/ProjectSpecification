@@ -1,6 +1,6 @@
 from threading import Lock
 
-# Estado compartido de herramientas (módulo independiente para evitar ciclos de import)
+# Estado compartido de herramientas (modulo independiente para evitar ciclos de import)
 _tools = None
 
 _tools_status = {

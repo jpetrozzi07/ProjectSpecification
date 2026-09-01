@@ -1,10 +1,10 @@
 from datetime import datetime
 from go_analyzer_obo_plus_gaf_finished import GO_Tools
 import threading
-from flask import Flask, render_template, jsonify, current_app
+from flask import Flask, render_template, jsonify, current_app, request
 import tools_state
 
-from Gaf_parser_finished import GafParser
+from gaf_parser import GafParser
 from gaf_endpoints import gaf_bp
 from obo_endpoints import obo_bp
 from neighborhood_endpoints import neighborhood_bp
@@ -19,8 +19,7 @@ app.register_blueprint(similarity_bp)
 app.register_blueprint(matrix_bp)
 
 def _load_tools_bg(gaf_path: str, obo_path: str):
-    # Use attributes on the tools_state module to avoid import-time cycles
-    # and ensure we mutate the shared state in one place.
+
     with app.app_context():
         with tools_state._tools_lock:
             tools_state._tools_status["loading"] = True
@@ -110,10 +109,48 @@ def annotation_matrix_viewer():
     return render_template('ViewingAnnotationMatrix.html')
 
 
-@app.route('/SoftwareInstructions')
-def instructions_viewer():
-    return render_template('SoftwareInstructions.html')
+@app.route('/hierarchy')
+def hierarchy_page():
+    return render_template('HierarchySearch.html')
 
 
-if __name__ == '__main__':
-    app.run()
+
+@app.route('/search_hierarchy', methods=['POST'])
+def search_hierarchy_results():
+    data = request.get_json()
+    if not data or 'go_id' not in data:
+        return jsonify({'error': 'No GO ID provided'}), 400
+    
+    go_id = data['go_id'].strip().upper()
+    
+    parents = []
+    children = []
+    
+    with tools_state._tools_lock:
+        tools = tools_state._tools
+        ready = tools_state._tools_status["ready"]
+
+    if tools and ready:
+        obo_parser = getattr(tools, 'obo', None)
+        if obo_parser:
+
+            try:
+                children_df = obo_parser.get_children(go_id)
+                if not children_df.empty:
+                    children = children_df[['id', 'name']].apply(
+                        lambda x: f"{x['id']} - {x['name']}", axis=1
+                    ).tolist()
+            except Exception:
+                pass 
+
+
+            try:
+                parent_set = obo_parser.get_ancestors(go_id)
+                for parent_id in sorted(parent_set):
+                    parent_term = obo_parser.get_term(parent_id)
+                    if parent_term is not None:
+                        parents.append(f"{parent_id} - {parent_term.get('name', 'N/A')}")
+            except Exception:
+                pass
+
+    return jsonify({'parents': parents, 'children': children})
